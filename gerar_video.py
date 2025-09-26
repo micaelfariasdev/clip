@@ -1,7 +1,7 @@
 from moviepy import VideoFileClip, CompositeVideoClip, vfx, ImageClip
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
-
+import subprocess, shlex
 
 def gerar_texto(dim: list, textos: list, font_path, font_size, cor, output, stroke_width=None, stroke_color=None, background_path=None):
     w, h = dim
@@ -36,19 +36,41 @@ def gerar_texto(dim: list, textos: list, font_path, font_size, cor, output, stro
 
     return fundo
 
+def cortar(arq, inicio, fim):
+    cmd = f'ffmpeg -y -hide_banner -loglevel error -i "{arq}"'
+    if inicio:
+        cmd += f' -ss {inicio}'
+    if fim:
+        cmd += f' -to {fim}'
+    cmd += f' -c copy "TEMP_CROP_PART.mp4"'
+    proc = subprocess.run(shlex.split(cmd))
+    return "TEMP_CROP_PART.mp4"
 
-def editar_video_com_texto(n):
+def editar(n):
     """
     """
     video_path = n['video']
-    init = 0
-    final = int(n['corte'])
+    init = "00:00:00"
+    h, m, s = init.split(':')
+    h, m, s = int(h), int(m), int(s)
+
+    m_fim = m + n['corte']
+    if m_fim >= 60:
+        h += m_fim // 60
+        m_fim = m_fim % 60
+
+    h = str(h).zfill(2)
+    m_fim = str(m_fim).zfill(2)
+    s = str(s).zfill(2)
+    final = ':'.join([h, m_fim, s])
     clip = VideoFileClip(video_path)
     for_num = int(clip.duration / n['corte'])
     target_width, target_height = n['dimensao']
+    
     for part in range(1, int(for_num) + 1):
         output_path = f"parte-{str(part).zfill(2)}.mp4"
-        clip = VideoFileClip(video_path).subclipped(start_time=init, end_time=final)
+        video_path_crop = cortar(video_path,init,final)
+        clip = VideoFileClip(video_path_crop)
         clip_redimensionado = clip.with_effects(
             [vfx.Resize(width=target_width)])
         img_texto = gerar_texto(
@@ -79,14 +101,3 @@ def editar_video_com_texto(n):
     return print(f'{output_path} criado com sucesso')
 
 
-if __name__ == "__main__":
-    data = {
-        'video': 'corte.mp4',
-        'fonte': 'Brushot-Bold.ttf',
-        'bg': 'image.png',
-        'dimensao': [720, 1280],
-        'corte': 120,
-        'text': 'Superman\n',
-    }
-
-    editar_video_com_texto(data)
