@@ -15,24 +15,32 @@ import tempfile
 root_dir = os.path.dirname(os.path.abspath(__file__))
 
 
-def upload(video_path, descricao, headless=True, agendado=False):
+def upload(video_path, descricao, hastag, headless=True, agendado=False):
     video_path_ = f'{root_dir}/{video_path}'
     text = descricao
-
+    print(text)
     options = Options()
     if headless:
         options.add_argument("--headless=new")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--remote-debugging-port=9222")
     options.add_argument("--disable-gpu")  # útil para headless
     options.add_argument("--window-size=1920,1080")
-    options.binary_location = "/snap/bin/chromium"
-    service = Service("/home/micaelfarias/clip/chromedriver")
-    driver = webdriver.Chrome(service=service, options=options)
 
-    driver.get("https://www.tiktok.com/login")
-    time.sleep(2)
+    driver = None
+
+    try:
+        service = Service(f"{root_dir}/chromedriver")
+        driver = webdriver.Chrome(service=service, options=options)
+    except Exception as e1:
+        try:
+            driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+        except Exception as e2:
+            print("Erro ao abrir driver:", e1, e2)
+
+    if driver:
+        driver.get("https://www.tiktok.com/login")
+        time.sleep(2)
     try:
         with open("TK_cookies_loovemusic.br.json", "r", encoding="utf-8") as f:
             cookies = json.load(f)
@@ -53,19 +61,29 @@ def upload(video_path, descricao, headless=True, agendado=False):
         print('Arquivo enviado', )
     except Exception as e:
         return print('Erro ao enviar arquivo', video_path_, f"{type(e).__name__} - {e}")
+    
     try:
         desc_box = WebDriverWait(driver, 30).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, '.public-DraftEditor-content')))
-        desc_box.clear()
+            EC.presence_of_element_located((By.CSS_SELECTOR, '.public-DraftEditor-content'))
+        )
+        desc_box.send_keys(Keys.CONTROL, 'a')
+        desc_box.send_keys(Keys.BACKSPACE)
         desc_box.send_keys(text)
+
+        for HAS in hastag:
+            desc_box.send_keys(HAS)
+            time.sleep(2)
+            desc_box.send_keys(Keys.ENTER)
+
         print('Descrição enviada')
     except:
         return print('Erro ao enviar descrição')
+  
 
     if agendado:
         try:
             span_to_click = WebDriverWait(driver, 30).until(
-                EC.element_to_be_clickable(
+                EC.presence_of_element_located(
                     (By.XPATH, "/html/body/div[1]/div/div/div[2]/div[2]/div/div/div/div[4]/div[1]/div[4]/div[1]/div[1]/div/div[2]/label[2]"))
             )
 
@@ -125,22 +143,30 @@ def upload(video_path, descricao, headless=True, agendado=False):
                 print(f'Erro de Rascunho: {type(draft_e).__name__} - {draft_e}')
                 driver.quit()
                 return
-
+    time.sleep(5)
     try:
+        verify_button = WebDriverWait(driver, 30).until(
+            EC.element_to_be_clickable((
+                By.XPATH, "//*[@id='root']/div/div/div[2]/div[2]/div/div/div/div[4]/div[1]/div[7]/div/div[3]/div[1]/div[2]")))
+        verify_button.click()
+        time.sleep(1)
         publish_button = WebDriverWait(driver, 30).until(
             EC.element_to_be_clickable((
-                By.CSS_SELECTOR, "button[data-e2e='post_video_button']")))
+                By.XPATH, "//*[@id='root']/div/div/div[2]/div[2]/div/div/div/div[5]/div/button[1]")))
         publish_button.click()
-
-        publish_two_button = WebDriverWait(driver, 30).until(
-            EC.element_to_be_clickable((
-                By.XPATH, "/html/body/div[6]/div/div/div[3]/button[2]/div/div")))
-        publish_two_button.click()
-
+        time.sleep(5)
+        publish_two_buttons = driver.find_elements(
+            By.XPATH, "/html/body/div[6]/div/div/div[3]/button[2]/div/div"
+        )
+        if publish_two_buttons:
+            WebDriverWait(driver, 5).until(EC.element_to_be_clickable(publish_two_buttons[0]))
+            publish_two_buttons[0].click()
+        
         print('Publicado com sucesso')
     except Exception as e:
-        return print('Erro ao fazer publicação', f'{type(e).__name__} - {e}')
-
+        print('Erro ao fazer publicação', f'{type(e).__name__} - {e}')
+    time.sleep(5)
     driver.quit()
+
 
 

@@ -1,6 +1,9 @@
 # download_direct.py
 import subprocess, shlex, sys
 
+import subprocess
+import shlex
+
 def baixar(url, inicio, tempo, destino='TEMP_CROP.mp4'):
     h, m, s = inicio.split(':')
     h, m, s = int(h), int(m), int(s)
@@ -15,18 +18,24 @@ def baixar(url, inicio, tempo, destino='TEMP_CROP.mp4'):
     s = str(s).zfill(2)
 
     fim = ':'.join([h, m_fim, s])
-    print(fim)
+    print("Final:", fim)
+
     cmd = f'ffmpeg -y -hide_banner -loglevel error -i "{url}"'
     if inicio:
         cmd += f' -ss {inicio}'
     if fim:
         cmd += f' -to {fim}'
-    cmd += f' -c copy "{destino}"'
+
+    # reencode de áudio para ajustar volume, vídeo pode copiar
+    cmd += f' -c:v copy -af "volume=0.8" "{destino}"'
+
     proc = subprocess.run(shlex.split(cmd))
     rc = proc.returncode
     if rc == 0:
         print("Concluído:", destino)
     else:
         print("Erro, código:", rc)
+        import sys
         sys.exit(rc)
+
 
