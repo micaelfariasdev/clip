@@ -78,11 +78,11 @@ def automacao(
     hastag_lis.append('#animetiktok')
     hastag_lis.append('#nerd')
     hastag_lis.append('#geek')
-    hastag_lis.append('#FYP')
     hastag_lis.append('#FILME')
     hastag_lis.append('#lançamento')
     hastag_lis.append('#story')
     hastag_lis.append('#FYP')
+
     if up:
         agora = datetime.now()
         for i, arq in enumerate(arquivos):
