@@ -129,9 +129,3 @@ automacao(
     up=False,
 )
 
-# automacao(
-#     descricao="O confronto final! Os Vingadores se unem para enfrentar Thanos e salvar o universo. Quem sairá vencedor dessa batalha épica?",
-#     hashtag="#Vingadores #Thanos #Marvel #BatalhaÉpica #SuperHeróis #AvengersEndgame #MarvelFans #ClipesÉpicos #Geek #Cinema #HQ",
-#     down=False,
-#     create=False
-# )
