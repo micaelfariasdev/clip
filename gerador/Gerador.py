@@ -1,12 +1,8 @@
 import shutil
 import os
 import glob
-from gerar_video import editar
-from donwload import baixar
-from postar import upload
+from .utils import editar, baixar, upload, notify, send
 from datetime import datetime, timedelta
-from utils import notify
-from send import send
 
 
 def automacao(
@@ -20,7 +16,8 @@ def automacao(
     clip: int = 2,
     down: bool = True,
     create: bool = True,
-    up: bool = True
+    up: bool = True,
+    send_: bool = True,
 ):
     """
     Automação para cortar vídeos, adicionar texto e preparar post para TikTok.
@@ -52,8 +49,8 @@ def automacao(
         print('Video Baixado com sucesso')
     if create:
         data = {
-            'video': 'TEMP_CROP.mp4',
-            'fonte': 'Brushot-Bold.ttf',
+            'video': 'gerador/download/TEMP_CROP.mp4',
+            'fonte': 'gerador/utils/Brushot-Bold.ttf',
             'bg': bg,
             'dimensao': [720, 1280],
             'corte': clip,
@@ -101,31 +98,37 @@ def automacao(
                    agendado=agendado, headless=True)
             notify('Sucesso', f'{arq} publicado com sucesso')
 
-    else:
+    if send_:
         descrição = f'{descrição_base} {' '.join(hastag_lis)}'
         print(descrição)
         send(arquivos, descrição)
         notify(
             'Sucesso', f'Clipe enviado no whatsapp com sucesso')
         
-    for item in glob.glob("TEMP*"):
-        if os.path.isfile(item):
-            os.remove(item)
-        elif os.path.isdir(item):
-            shutil.rmtree(item)
+    print("🧹 Procurando por arquivos e pastas temporárias (TEMP*) para limpar...")
+
+    # Define o diretório de busca para ser reutilizado
+    
+    print(f"🔍 arquvios: {glob.glob("**/TEMP*", recursive=True)}")
+    # Usa o glob para encontrar os itens
+    for item_name in glob.glob("**/TEMP*", recursive=True):
+        
+        # Constrói o caminho completo para o item encontrado
+        full_path = os.path.join(item_name)
+
+        try:
+            if os.path.isfile(full_path):
+                os.remove(full_path)
+                print(f"  🗑️ Arquivo removido: {full_path}")
+            
+            elif os.path.isdir(full_path):
+                shutil.rmtree(full_path)
+                print(f"  🗑️ Diretório removido: {full_path}")
+        
+        except OSError as e:
+            print(f"  ❌ Erro ao remover {full_path}: {e}")
+
+    print("✅ Limpeza concluída.")
 
 
-automacao(
-    url="/home/micael-farias/Downloads/videoplayback.mp4",
-    bg='https://animesonlinecc.to/wp-content/uploads/2023/08/qvgYEPOXa1eLJfkOyi5ddqK2Tmu.jpg',
-    text='OnePiece Ep. 1071',
-    descricao='''Luffy finalmente enfrenta Kaido! Quem vencerá?''',
-    hashtag="#OnePiece #LuffyVsKaido #AnimeBattle #EpicBattle",
-    inicio="00:15:20",
-    tempo=2,
-    clip=30,
-    down=False,
-    create=False,
-    up=False,
-)
 
